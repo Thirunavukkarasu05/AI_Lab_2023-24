@@ -32,6 +32,11 @@ def dfs(visited, graph, node):
 print("Following is the Depth-First Search")
 dfs(visited,graph,'5')
 ```
+
+
+
+
+
 ### Output:
 ![Screenshot 2024-08-14 090218](https://github.com/user-attachments/assets/a01874af-8abf-4e12-8824-4ed730edf86e)
 
