@@ -2,9 +2,6 @@
 ## Register Number:
 ## AIM:
 To write a program to implement the SVM For Spam Mail Detection.
-## Equipments Required:
-1. Hardware – PCs
-2. Anaconda – Python 3.7 Installation / Jupyter notebook
 ## Algorithm
 1. Import the required packages.
 2. Import the dataset to operate on.
@@ -13,11 +10,7 @@ To write a program to implement the SVM For Spam Mail Detection.
 5. End the program.
 ## Program:
 ```
-/*
-Program to implement the SVM For Spam Mail Detection..
-Developed by: Thirunavukkarasu P
-RegisterNumber:  212222040173
-*/
+
 import pandas as pd
 data=pd.read_csv("spam.csv",encoding='latin-1')
 data.head()
