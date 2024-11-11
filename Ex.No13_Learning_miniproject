@@ -3,100 +3,179 @@
 ### REGISTER NUMBER : 212222040173
 
 ### AIM:
-To write a program to train a classifier for garbage classification with PyTorch.
+To write a program identify and avoid email scams effectively.
 
 ### Algorithm:
-1. Import necessary libraries (PyTorch, Torchvision, etc.)
-2. Load the dataset of images representing different types of garbage
-3. Define the EfficientNet-B0 model and add a classification head to it
-4. Create data loaders for training and validation sets
-5. Train the model using the Adam optimizer and cross-entropy loss function
-6. Monitor the model's performance on the validation set during training
-
+1.Verify Sender's Identity: Check the sender's email address for legitimacy, especially any subtle changes that may indicate impersonation.
+2.Inspect Content Carefully: Look for suspicious language, grammatical errors, or unrealistic offers, which are common red flags.
+3.Avoid Clicking on Unknown Links: Hover over links to reveal the URL before clicking, and never download attachments from unknown senders.
+4.Check for Urgency and Threats: Scammers often create a sense of urgency or fear to prompt immediate action.
+5.Use Security Tools: Enable spam filters, use antivirus software, and keep your devices and email account secure with strong passwords.
 
 ### Program:
-```python
-import torch
-import torchvision
-from torchvision import datasets, transforms, models
-from torch.utils.data import DataLoader
-import torch.optim as optim
-import torch.nn as nn
-import time
-import os
 
-data_dir = "garbage_classification"
-data_transforms = transforms.Compose([
-    transforms.RandomResizedCrop(224),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.style
+import seaborn as sns
+import nltk #Natural Language Toolkit
+#To ignore warnings
+import warnings
+warnings.filterwarnings('ignore')
 
-train_dataset = datasets.ImageFolder(data_dir, transform=data_transforms)
-train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=4)
-num_classes = 12
+df = pd.read_csv('/content/spam.csv',encoding='latin-1')
+df.head()
 
-model = models.efficientnet_b0(pretrained=True)
-model.classifier[1] = nn.Linear(model.classifier[1].in_features, num_classes)
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = model.to(device)
+df=df.drop(['Unnamed: 2', 'Unnamed: 3','Unnamed: 4'],axis=1)
 
-criterion = nn.CrossEntropyLoss()  
-optimizer = optim.Adam(model.parameters(), lr=1e-4)
+# Renaming v1 & v2 as Category & Text
+df=df.rename(columns={"v1":"Category","v2":"Text"})
 
-# Function to track training progress
-def train_model(model, criterion, optimizer, num_epochs=5):
-    for epoch in range(num_epochs):
-        print(f'Epoch {epoch+1}/{num_epochs}')
-        print('-' * 10)
+#Sample post modifications
+df.head()
 
-        model.train()  # Set model to training mode
-        running_loss = 0.0
-        running_corrects = 0
-        total_samples = 0
-        
-        start_time = time.time()
+print(" Total number of rows in the dataset are", len(df))
 
-        # Iterate over data in batches
-        for inputs, labels in train_loader:
-            inputs, labels = inputs.to(device), labels.to(device)
+plt.rcParams['figure.facecolor'] = 'white'
+plt.rcParams['axes.facecolor'] = 'white'
+fig, ax = plt.subplots(1, 2, figsize=(15, 4))
+ax = ax.flatten()
+value_counts = df['Category'].value_counts()
+labels = value_counts.index.tolist()
+colors =["#6782a8", "#ab90a0" ]
+# Donut Chart
+wedges, texts, autotexts = ax[0].pie(
+    value_counts, autopct='%1.1f%%',textprops={'size': 9, 'color': 'white','fontweight':'bold' }, colors=colors,
+    wedgeprops=dict(width=0.35),  startangle=80,   pctdistance=0.85  )
+# circle
+centre_circle = plt.Circle((0, 0), 0.6, fc='white')
+ax[0].add_artist(centre_circle)
 
-            # Zero the parameter gradients
-            optimizer.zero_grad()
-
-            # Forward pass
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            _, preds = torch.max(outputs, 1)
-
-            # Backward pass and optimization
-            loss.backward()
-            optimizer.step()
-
-            # Update statistics
-            running_loss += loss.item() * inputs.size(0)
-            running_corrects += torch.sum(preds == labels.data)
-            total_samples += labels.size(0)
-
-            # Print progress every 100 batches
-            if total_samples % 3200 == 0:
-                batch_loss = running_loss / total_samples
-                batch_acc = running_corrects.double() / total_samples
-                print(f"Progress: {total_samples}/{len(train_dataset)} - Loss: {batch_loss:.4f}, Acc: {batch_acc:.4f}")
-
-        # End of epoch stats
-        epoch_loss = running_loss / len(train_loader.dataset)
-        epoch_acc = running_corrects.double() / len(train_loader.dataset)
-
-        print(f'Epoch {epoch+1} - Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
-        print(f'Time for epoch {epoch+1}: {time.time() - start_time:.2f} seconds\n')
-
-    return model
+# Count Plot
+sns.countplot(data=df, y=df['Category'], ax=ax[1], palette=colors, order=labels)
+for i, v in enumerate(value_counts):
+    ax[1].text(v + 1, i, str(v), color='black',fontsize=10, va='center')
+sns.despine(left=True, bottom=True)
+plt.yticks(fontsize=9,color='black')
+ax[1].set_ylabel(None)
+plt.xlabel("")
+plt.xticks([])
+fig.suptitle('Spam - Ham Distribution', fontsize=15)
+plt.tight_layout(rect=[0, 0, 0.85, 1])
+plt.show()
 
 
-model = train_model(model, criterion, optimizer, num_epochs=10)
-torch.save(model.state_dict,"garbage_classifier")
+
+df['Length']=df['Text'].apply(len)
+display(df.head())
+
+#distribution of the data
+import plotly.express as px
+fig = px.histogram(df, x='Length', marginal='rug',
+                   title='Histogram of Text Length')
+fig.update_layout(
+    xaxis_title='Length',
+    yaxis_title='Frequency',
+    showlegend=True)
+
+import plotly.express as px
+fig = px.histogram(df, x='Length', color='Category', marginal='rug',
+                   title='Histogram of Text Length by Category')
+fig.update_layout(
+    xaxis_title='Length',
+    yaxis_title='Frequency',
+    showlegend=True)
+df.loc[:,'Category']=df.Category.map({'ham':0, 'spam':1})
+df['Category'] = df['Category'].astype(int)
+df.head()
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+
+count = CountVectorizer()
+text = count.fit_transform(df['Text'])
+#Train & test split
+x_train, x_test, y_train, y_test = train_test_split(text, df['Category'], test_size=0.30, random_state=100)
+text
+display('X-Train :', x_train.shape)
+display('X-Test :',x_test.shape)
+display('Y-Train :',y_train.shape)
+display('X-Test :',y_test.shape)
+%%time
+from sklearn.neural_network import MLPClassifier
+
+mlp_classifier_model = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=1000)
+mlp_classifier_model.fit(x_train, y_train)
+
+prediction = mlp_classifier_model.predict(x_test)
+
+# Calculate and print classification metrics
+print("MLP Classifier")
+print("Accuracy score: {:.2f}".format(accuracy_score(y_test, prediction)))
+print("Precision score: {:.2f}".format(precision_score(y_test, prediction)))
+print("Recall score: {:.2f}".format(recall_score(y_test, prediction)))
+print("F1 score: {:.2f}".format(f1_score(y_test, prediction)))
+%%time
+# Multinomial Naive Bayes model
+from sklearn.naive_bayes import MultinomialNB
+
+multinomial_nb_model = MultinomialNB()
+multinomial_nb_model.fit(x_train, y_train)  # Train the model
+
+prediction = multinomial_nb_model.predict(x_test)
+
+print("Multinomial NB")
+print("Accuracy score: {}". format(accuracy_score(y_test, prediction)) )
+print("Precision score: {}". format(precision_score(y_test, prediction)) )
+print("Recall score: {}". format(recall_score(y_test, prediction)))
+print("F1 score: {}". format(f1_score(y_test, prediction)))
+%%time
+# Bernoulli Naive Bayes model
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+bernoulli_nb_model = BernoulliNB()
+bernoulli_nb_model.fit(x_train, y_train)
+
+prediction = bernoulli_nb_model.predict(x_test)
+
+#Evaluation
+print("Bernoulli NB")
+print("Accuracy score: {}". format(accuracy_score(y_test, prediction)) )
+print("Precision score: {}". format(precision_score(y_test, prediction)) )
+print("Recall score: {}". format(recall_score(y_test, prediction)))
+print("F1 score: {}". format(f1_score(y_test, prediction)))
+from sklearn.metrics import confusion_matrix
+models = [("Multinomial NB", multinomial_nb_model), ("Bernoulli NB", bernoulli_nb_model),("MLP Classifier", mlp_classifier_model) ]
+
+fig, axes = plt.subplots(1, 3, figsize=(10, 3))
+for i, (model_name, model) in enumerate(models):
+    prediction = model.predict(x_test)
+    cm = confusion_matrix(y_test, prediction)
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", cbar=False, ax=axes[i])
+    axes[i].set_title(f"{model_name} - Confusion Matrix")
+    axes[i].set_xlabel("Predicted")
+    axes[i].set_ylabel("Actual")
+plt.tight_layout()
+plt.show()
+metric_data = []
+for model_name, model in models:
+    prediction = model.predict(x_test)
+    accuracy = accuracy_score(y_test, prediction)
+    precision = precision_score(y_test, prediction)
+    recall = recall_score(y_test, prediction)
+    f1 = f1_score(y_test, prediction)
+    metric_data.append([accuracy, precision, recall, f1])
+metric_labels = ["Accuracy", "Precision", "Recall", "F1 Score"]
+#heatmap for metric comparison
+plt.figure(figsize=(6, 3))
+sns.heatmap(metric_data, annot=True, fmt=".2f", cbar=False, cmap="summer_r", xticklabels=metric_labels, yticklabels=[model_name for model_name, _ in models])
+plt.title("Metric Comparison")
+plt.yticks(rotation=0)
+plt.xlabel("Metrics")
+plt.ylabel("Models")
+plt.tight_layout()
+plt.show()
 ```
 
 
